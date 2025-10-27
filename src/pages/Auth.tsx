@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +16,7 @@ export default function Auth() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupName, setSignupName] = useState("");
+  const [signupRole, setSignupRole] = useState<'student' | 'alumni'>('student');
   
   const { user, signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -51,7 +53,7 @@ export default function Auth() {
     
     setIsLoading(true);
     
-    const { error } = await signUp(signupEmail, signupPassword, signupName);
+    const { error } = await signUp(signupEmail, signupPassword, signupName, signupRole);
     
     if (error) {
       toast.error(error.message || "Signup failed. Please try again.");
@@ -197,6 +199,20 @@ export default function Auth() {
                   <p className="text-xs text-muted-foreground">
                     Minimum 8 characters
                   </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>I am a</Label>
+                  <RadioGroup value={signupRole} onValueChange={(value: 'student' | 'alumni') => setSignupRole(value)}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="student" id="student" />
+                      <Label htmlFor="student" className="font-normal cursor-pointer">Student</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="alumni" id="alumni" />
+                      <Label htmlFor="alumni" className="font-normal cursor-pointer">Alumni</Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
                 <Button type="submit" className="w-full" variant="accent" disabled={isLoading}>

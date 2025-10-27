@@ -2,65 +2,116 @@ import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, Search, TrendingUp } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
-const mockCommunities = [
-  {
-    id: 1,
-    name: "Computer Science & Technology",
-    description: "Discuss algorithms, programming languages, and tech innovations",
-    members: 1243,
-    posts: 892,
-    category: "Academic",
-    trending: true
-  },
-  {
-    id: 2,
-    name: "Career Development",
-    description: "Job opportunities, interview tips, and professional growth",
-    members: 2156,
-    posts: 1534,
-    category: "Professional",
-    trending: true
-  },
-  {
-    id: 3,
-    name: "Research & Publications",
-    description: "Share research papers, collaborate on projects, and seek guidance",
-    members: 687,
-    posts: 423,
-    category: "Academic",
-    trending: false
-  },
-  {
-    id: 4,
-    name: "Alumni Network",
-    description: "Connect with alumni, seek mentorship, and share experiences",
-    members: 3421,
-    posts: 2876,
-    category: "Networking",
-    trending: true
-  },
-  {
-    id: 5,
-    name: "Startup Ecosystem",
-    description: "Entrepreneurship, startups, and innovation discussions",
-    members: 891,
-    posts: 645,
-    category: "Professional",
-    trending: false
-  },
-  {
-    id: 6,
-    name: "Study Groups",
-    description: "Form study groups, share notes, and prepare for exams together",
-    members: 1567,
-    posts: 1234,
-    category: "Academic",
-    trending: false
-  }
-];
+interface Community {
+  id: string;
+  name: string;
+  description: string;
+  slug: string;
+  memberCount?: number;
+  isMember?: boolean;
+}
 
 export default function Communities() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    fetchCommunities();
+  }, [user]);
+
+  const fetchCommunities = async () => {
+    try {
+      const { data: communitiesData, error } = await supabase
+        .from('communities')
+        .select('*');
+
+      if (error) throw error;
+
+      if (!communitiesData) {
+        setCommunities([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch member counts and check if user is a member
+      const communitiesWithDetails = await Promise.all(
+        communitiesData.map(async (community) => {
+          const { count } = await supabase
+            .from('community_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('community_id', community.id);
+
+          let isMember = false;
+          if (user) {
+            const { data: memberData } = await supabase
+              .from('community_members')
+              .select('id')
+              .eq('community_id', community.id)
+              .eq('user_id', user.id)
+              .single();
+            isMember = !!memberData;
+          }
+
+          return {
+            ...community,
+            memberCount: count || 0,
+            isMember
+          };
+        })
+      );
+
+      setCommunities(communitiesWithDetails);
+    } catch (error) {
+      console.error('Error fetching communities:', error);
+      toast.error('Failed to load communities');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinCommunity = async (communityId: string) => {
+    if (!user) {
+      toast.error('Please sign in to join communities');
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('community_members')
+        .insert({
+          community_id: communityId,
+          user_id: user.id
+        });
+
+      if (error) throw error;
+
+      toast.success('Successfully joined community!');
+      fetchCommunities();
+    } catch (error: any) {
+      console.error('Error joining community:', error);
+      toast.error(error.message || 'Failed to join community');
+    }
+  };
+
+  const handleOpenCommunity = (communitySlug: string) => {
+    navigate(`/communities/${communitySlug}`);
+  };
+
+  const filteredCommunities = communities.filter(community =>
+    community.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    community.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -79,51 +130,58 @@ export default function Communities() {
             <Input
               placeholder="Search communities..."
               className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="accent" className="gap-2">
-            <Users className="h-4 w-4" />
-            Create Community
-          </Button>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockCommunities.map((community) => (
-            <div key={community.id} className="bg-card rounded-xl shadow-card border p-6 transition-smooth hover:shadow-lg">
-              <div className="flex items-start justify-between mb-4">
-                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-                {community.trending && (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-accent/10 text-accent text-xs rounded-full font-medium">
-                    <TrendingUp className="h-3 w-3" />
-                    Trending
+        {loading ? (
+          <div className="text-center py-12">Loading communities...</div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCommunities.map((community) => (
+              <div key={community.id} className="bg-card rounded-xl shadow-card border p-6 transition-smooth hover:shadow-lg">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Users className="h-6 w-6 text-primary" />
                   </div>
-                )}
-              </div>
+                </div>
 
-              <h3 className="text-lg font-semibold mb-2">{community.name}</h3>
-              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                {community.description}
-              </p>
+                <h3 className="text-lg font-semibold mb-2">{community.name}</h3>
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  {community.description}
+                </p>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                <span>{community.members.toLocaleString()} members</span>
-                <span>•</span>
-                <span>{community.posts.toLocaleString()} posts</span>
-              </div>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                  <span>{community.memberCount} members</span>
+                </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded-full font-medium">
-                  {community.category}
-                </span>
-                <Button variant="outline" size="sm">
-                  Join
-                </Button>
+                <div className="flex items-center gap-2">
+                  {community.isMember ? (
+                    <Button 
+                      variant="accent" 
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleOpenCommunity(community.slug)}
+                    >
+                      Open
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleJoinCommunity(community.id)}
+                    >
+                      Join
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );

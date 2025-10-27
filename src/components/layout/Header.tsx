@@ -1,9 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Users, Home, MessageSquare, Briefcase, Search } from "lucide-react";
+import { Users, Home, MessageSquare, Briefcase, Search, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const Header = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -62,11 +64,23 @@ export const Header = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link to="/auth">
-            <Button variant="accent" size="sm">
-              Sign In
-            </Button>
-          </Link>
+          {user ? (
+            <>
+              <span className="text-sm text-muted-foreground hidden md:inline">
+                {user.email}
+              </span>
+              <Button variant="outline" size="sm" onClick={signOut} className="gap-2">
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <Link to="/auth">
+              <Button variant="accent" size="sm">
+                Sign In
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </header>

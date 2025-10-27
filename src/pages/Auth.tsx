@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -14,16 +15,29 @@ export default function Auth() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupName, setSignupName] = useState("");
+  
+  const { user, signIn, signUp } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false);
+    const { error } = await signIn(loginEmail, loginPassword);
+    
+    if (error) {
+      toast.error(error.message || "Login failed. Please try again.");
+    } else {
       toast.success("Login successful!");
-    }, 1500);
+    }
+    
+    setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -37,11 +51,16 @@ export default function Auth() {
     
     setIsLoading(true);
     
-    // Simulate signup
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("Account created! Please check your email for verification.");
-    }, 1500);
+    const { error } = await signUp(signupEmail, signupPassword, signupName);
+    
+    if (error) {
+      toast.error(error.message || "Signup failed. Please try again.");
+    } else {
+      toast.success("Account created successfully!");
+      navigate("/");
+    }
+    
+    setIsLoading(false);
   };
 
   return (

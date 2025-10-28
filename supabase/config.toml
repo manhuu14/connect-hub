@@ -1,1 +1,13 @@
 project_id = "lfkopushsjqigxiafior"
+
+[functions.notify-application]
+verify_jwt = false
+
+[functions.get-analytics]
+verify_jwt = true
+
+[functions.manage-community]
+verify_jwt = true
+
+[functions.user-profile-management]
+verify_jwt = true

@@ -39,35 +39,41 @@ export const HeroSection = () => {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mt-20 max-w-5xl mx-auto">
-          <div className="bg-card p-6 rounded-xl shadow-card border transition-smooth hover:shadow-lg">
-            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-              <Users className="h-6 w-6 text-primary" />
+          <Link to="/communities">
+            <div className="bg-card p-6 rounded-xl shadow-card border transition-smooth hover:shadow-lg cursor-pointer">
+              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Vibrant Communities</h3>
+              <p className="text-muted-foreground">
+                Join topic-based communities to share resources, discuss ideas, and collaborate with peers.
+              </p>
             </div>
-            <h3 className="text-lg font-semibold mb-2">Vibrant Communities</h3>
-            <p className="text-muted-foreground">
-              Join topic-based communities to share resources, discuss ideas, and collaborate with peers.
-            </p>
-          </div>
+          </Link>
 
-          <div className="bg-card p-6 rounded-xl shadow-card border transition-smooth hover:shadow-lg">
-            <div className="h-12 w-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
-              <Briefcase className="h-6 w-6 text-accent" />
+          <Link to="/opportunities">
+            <div className="bg-card p-6 rounded-xl shadow-card border transition-smooth hover:shadow-lg cursor-pointer">
+              <div className="h-12 w-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
+                <Briefcase className="h-6 w-6 text-accent" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Career Opportunities</h3>
+              <p className="text-muted-foreground">
+                Access exclusive job postings, internships, and referrals from our alumni network.
+              </p>
             </div>
-            <h3 className="text-lg font-semibold mb-2">Career Opportunities</h3>
-            <p className="text-muted-foreground">
-              Access exclusive job postings, internships, and referrals from our alumni network.
-            </p>
-          </div>
+          </Link>
 
-          <div className="bg-card p-6 rounded-xl shadow-card border transition-smooth hover:shadow-lg">
-            <div className="h-12 w-12 rounded-lg bg-secondary/50 flex items-center justify-center mb-4">
-              <GraduationCap className="h-6 w-6 text-primary" />
+          <Link to="/alumni">
+            <div className="bg-card p-6 rounded-xl shadow-card border transition-smooth hover:shadow-lg cursor-pointer">
+              <div className="h-12 w-12 rounded-lg bg-secondary/50 flex items-center justify-center mb-4">
+                <GraduationCap className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Mentorship Network</h3>
+              <p className="text-muted-foreground">
+                Connect with experienced alumni for guidance, career advice, and professional growth.
+              </p>
             </div>
-            <h3 className="text-lg font-semibold mb-2">Mentorship Network</h3>
-            <p className="text-muted-foreground">
-              Connect with experienced alumni for guidance, career advice, and professional growth.
-            </p>
-          </div>
+          </Link>
         </div>
       </div>
     </section>

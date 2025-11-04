@@ -66,12 +66,15 @@ export const Header = () => {
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              <span className="text-sm text-muted-foreground hidden md:inline">
-                {user.email}
-              </span>
+              <Link to="/profile">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">Profile</span>
+                </Button>
+              </Link>
               <Button variant="outline" size="sm" onClick={signOut} className="gap-2">
                 <LogOut className="h-4 w-4" />
-                Sign Out
+                <span className="hidden sm:inline">Sign Out</span>
               </Button>
             </>
           ) : (

@@ -613,6 +613,62 @@ const { data, error } = await supabase.functions.invoke('manage-user-role', {
 
 ---
 
+---
+
+## 11. get-user-profile
+
+**Purpose**: Fetch a user's complete profile including role and skills.
+
+**Endpoint**: `/functions/v1/get-user-profile`
+
+**Authentication**: Required (JWT token)
+
+**Request Body**:
+```json
+{
+  "userId": "uuid (optional, defaults to current user)"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "name": "John Doe",
+    "bio": "Computer Science student",
+    "title": "Software Developer",
+    "profile_pic_url": "https://...",
+    "github_url": "https://github.com/...",
+    "linkedin_url": "https://linkedin.com/in/...",
+    "role": "student",
+    "skills": [
+      {
+        "id": "uuid",
+        "skill_name": "React",
+        "user_id": "uuid"
+      }
+    ]
+  }
+}
+```
+
+**Usage Example**:
+```typescript
+// Get current user's profile
+const { data, error } = await supabase.functions.invoke('get-user-profile', {
+  body: {}
+});
+
+// Get another user's profile
+const { data, error } = await supabase.functions.invoke('get-user-profile', {
+  body: { userId: 'target-user-uuid' }
+});
+```
+
+---
+
 ## Deployment Status
 
 All edge functions are deployed and ready to use:
@@ -626,6 +682,7 @@ All edge functions are deployed and ready to use:
 ✅ get-community-feed
 ✅ toggle-post-like
 ✅ manage-user-role
+✅ get-user-profile
 
 ## Notes
 

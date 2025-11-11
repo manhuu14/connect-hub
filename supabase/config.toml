@@ -11,3 +11,21 @@ verify_jwt = true
 
 [functions.user-profile-management]
 verify_jwt = true
+
+[functions.search-alumni]
+verify_jwt = true
+
+[functions.apply-for-referral]
+verify_jwt = true
+
+[functions.update-application-status]
+verify_jwt = true
+
+[functions.get-community-feed]
+verify_jwt = true
+
+[functions.toggle-post-like]
+verify_jwt = true
+
+[functions.manage-user-role]
+verify_jwt = true

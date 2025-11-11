@@ -356,6 +356,263 @@ async function fetchAnalytics() {
 
 ---
 
+---
+
+## 5. search-alumni
+
+**Purpose**: Search for alumni profiles by name, title, bio, or skills.
+
+**Endpoint**: `/functions/v1/search-alumni`
+
+**Authentication**: Required (JWT token)
+
+**Request Body**:
+```json
+{
+  "searchQuery": "React"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "name": "John Doe",
+      "bio": "Software Engineer",
+      "title": "Senior Developer",
+      "profile_pic_url": "https://...",
+      "github_url": "https://github.com/...",
+      "linkedin_url": "https://linkedin.com/in/...",
+      "skills": ["React", "TypeScript", "Node.js"]
+    }
+  ]
+}
+```
+
+**Usage Example**:
+```typescript
+const { data, error } = await supabase.functions.invoke('search-alumni', {
+  body: { searchQuery: 'React' }
+});
+```
+
+---
+
+## 6. apply-for-referral
+
+**Purpose**: Submit an application for a job referral (students only).
+
+**Endpoint**: `/functions/v1/apply-for-referral`
+
+**Authentication**: Required (Student role only)
+
+**Request Body**:
+```json
+{
+  "referralId": "uuid",
+  "message": "I'm interested in this position because...",
+  "resumeUrl": "https://..."
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "student_id": "uuid",
+    "referral_id": "uuid",
+    "message": "I'm interested...",
+    "resume_url": "https://...",
+    "status": "pending",
+    "created_at": "2025-01-15"
+  }
+}
+```
+
+**Usage Example**:
+```typescript
+const { data, error } = await supabase.functions.invoke('apply-for-referral', {
+  body: {
+    referralId: 'referral-uuid',
+    message: 'I would love to work here because...',
+    resumeUrl: 'https://my-resume.pdf'
+  }
+});
+```
+
+---
+
+## 7. update-application-status
+
+**Purpose**: Update the status of a job application (alumni only - for their own referrals).
+
+**Endpoint**: `/functions/v1/update-application-status`
+
+**Authentication**: Required (Alumni who posted the referral)
+
+**Request Body**:
+```json
+{
+  "applicationId": "uuid",
+  "status": "accepted"
+}
+```
+
+**Valid Statuses**: `pending`, `accepted`, `rejected`
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "status": "accepted",
+    "updated_at": "2025-01-15"
+  }
+}
+```
+
+**Usage Example**:
+```typescript
+const { data, error } = await supabase.functions.invoke('update-application-status', {
+  body: {
+    applicationId: 'application-uuid',
+    status: 'accepted'
+  }
+});
+```
+
+---
+
+## 8. get-community-feed
+
+**Purpose**: Fetch posts from a specific community feed with likes/comments counts.
+
+**Endpoint**: `/functions/v1/get-community-feed`
+
+**Authentication**: Required (Community member only)
+
+**Request Body**:
+```json
+{
+  "communityId": "uuid"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Post title",
+      "content": "Post content",
+      "type": "update",
+      "media_url": "https://...",
+      "created_at": "2025-01-15",
+      "profiles": {
+        "id": "uuid",
+        "name": "John Doe",
+        "profile_pic_url": "https://..."
+      },
+      "likes_count": 15,
+      "comments_count": 8,
+      "user_has_liked": true
+    }
+  ]
+}
+```
+
+**Usage Example**:
+```typescript
+const { data, error } = await supabase.functions.invoke('get-community-feed', {
+  body: { communityId: 'community-uuid' }
+});
+```
+
+---
+
+## 9. toggle-post-like
+
+**Purpose**: Like or unlike a post.
+
+**Endpoint**: `/functions/v1/toggle-post-like`
+
+**Authentication**: Required (JWT token)
+
+**Request Body**:
+```json
+{
+  "postId": "uuid"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "action": "liked",
+  "liked": true
+}
+```
+
+**Usage Example**:
+```typescript
+const { data, error } = await supabase.functions.invoke('toggle-post-like', {
+  body: { postId: 'post-uuid' }
+});
+```
+
+---
+
+## 10. manage-user-role
+
+**Purpose**: Change a user's role (admin only - uses `has_role` function for authorization).
+
+**Endpoint**: `/functions/v1/manage-user-role`
+
+**Authentication**: Required (Admin role only)
+
+**Request Body**:
+```json
+{
+  "targetUserId": "uuid",
+  "newRole": "alumni"
+}
+```
+
+**Valid Roles**: `student`, `alumni`, `admin`
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "role": "alumni"
+  }
+}
+```
+
+**Usage Example**:
+```typescript
+const { data, error } = await supabase.functions.invoke('manage-user-role', {
+  body: {
+    targetUserId: 'user-uuid',
+    newRole: 'alumni'
+  }
+});
+```
+
+---
+
 ## Deployment Status
 
 All edge functions are deployed and ready to use:
@@ -363,10 +620,17 @@ All edge functions are deployed and ready to use:
 ✅ get-analytics  
 ✅ manage-community
 ✅ user-profile-management
+✅ search-alumni
+✅ apply-for-referral
+✅ update-application-status
+✅ get-community-feed
+✅ toggle-post-like
+✅ manage-user-role
 
 ## Notes
 
 - All functions include proper CORS headers for web application access
 - Authentication is handled via Supabase JWT tokens
-- Admin-only functions verify user role before executing
+- Admin-only functions use the `has_role` PostgreSQL function for secure role verification
+- RLS policies are the primary access control mechanism
 - All functions include comprehensive error handling and logging

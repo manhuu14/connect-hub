@@ -23,9 +23,9 @@ Deno.serve(async (req) => {
       }
     );
 
-    const { searchQuery } = await req.json();
+    const { searchQuery, page = 1, limit = 10 } = await req.json();
 
-    console.log('Searching alumni with query:', searchQuery);
+    console.log('Searching alumni with query:', searchQuery, 'page:', page, 'limit:', limit);
 
     // Get alumni user IDs
     const { data: alumniRoles, error: rolesError } = await supabaseClient
@@ -47,7 +47,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Search profiles
+    // Get total count first
+    let countQuery = supabaseClient
+      .from('profiles')
+      .select('id', { count: 'exact', head: false })
+      .in('id', alumniIds);
+
+    if (searchQuery && searchQuery.trim()) {
+      const searchTerm = `%${searchQuery}%`;
+      countQuery = countQuery.or(`name.ilike.${searchTerm},title.ilike.${searchTerm},bio.ilike.${searchTerm}`);
+    }
+
+    // Search profiles with pagination
     let query = supabaseClient
       .from('profiles')
       .select('id, name, bio, title, profile_pic_url, github_url, linkedin_url')
@@ -57,6 +68,11 @@ Deno.serve(async (req) => {
       const searchTerm = `%${searchQuery}%`;
       query = query.or(`name.ilike.${searchTerm},title.ilike.${searchTerm},bio.ilike.${searchTerm}`);
     }
+
+    // Apply pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+    query = query.range(from, to);
 
     const { data: profiles, error: profilesError } = await query;
 
@@ -92,10 +108,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Found alumni:', results.length);
+    // Get total count for filtered results
+    const totalCount = results.length;
+    
+    // Get total count before skill filtering
+    const { count } = await countQuery;
+    
+    console.log('Found alumni:', results.length, 'Total:', count);
 
     return new Response(
-      JSON.stringify({ success: true, data: results }),
+      JSON.stringify({ 
+        success: true, 
+        data: results,
+        pagination: {
+          page,
+          limit,
+          total: count || 0,
+          totalPages: Math.ceil((count || 0) / limit)
+        }
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

@@ -137,16 +137,19 @@ export default function Opportunities() {
     if (!user || !selectedReferral) return;
 
     try {
-      const { error } = await supabase
-        .from('applications')
-        .insert({
-          student_id: user.id,
-          referral_id: selectedReferral,
+      const { data, error } = await supabase.functions.invoke('apply-for-referral', {
+        body: {
+          referralId: selectedReferral,
           message: applyMessage,
-          status: 'pending'
-        });
+          resumeUrl: null
+        }
+      });
 
       if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to submit application');
+      }
 
       toast.success('Application submitted successfully!');
       setIsApplyDialogOpen(false);
@@ -154,7 +157,7 @@ export default function Opportunities() {
       setSelectedReferral(null);
     } catch (error: any) {
       console.error('Error applying:', error);
-      if (error.code === '23505') {
+      if (error.message?.includes('already applied')) {
         toast.error('You have already applied to this opportunity');
       } else {
         toast.error(error.message || 'Failed to submit application');

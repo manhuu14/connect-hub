@@ -91,41 +91,29 @@ export default function CommunityDetail() {
 
   const fetchPosts = async (communityId: string) => {
     try {
-      const { data: postsData, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('community_id', communityId)
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.functions.invoke('get-community-feed', {
+        body: { communityId }
+      });
 
       if (error) throw error;
 
-      const postsWithDetails = await Promise.all(
-        (postsData || []).map(async (post) => {
-          const { count } = await supabase
-            .from('comments')
-            .select('*', { count: 'exact', head: true })
-            .eq('post_id', post.id);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch posts');
+      }
 
-          const { data: authorData } = await supabase
-            .from('profiles')
-            .select('name')
-            .eq('id', post.author_id)
-            .single();
+      const postsFormatted = data.data.map((post: any) => ({
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        created_at: post.created_at,
+        author: { name: post.author_name },
+        commentCount: post.comment_count
+      }));
 
-          return {
-            id: post.id,
-            title: post.title,
-            content: post.content,
-            created_at: post.created_at,
-            author: { name: authorData?.name || 'Unknown' },
-            commentCount: count || 0
-          };
-        })
-      );
-
-      setPosts(postsWithDetails);
+      setPosts(postsFormatted);
     } catch (error) {
       console.error('Error fetching posts:', error);
+      toast.error('Failed to load community posts');
     }
   };
 

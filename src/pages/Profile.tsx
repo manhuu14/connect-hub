@@ -37,48 +37,38 @@ export default function Profile() {
       return;
     }
     fetchProfile();
-    fetchSkills();
   }, [user, navigate]);
 
   const fetchProfile = async () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+      const { data, error } = await supabase.functions.invoke('get-user-profile', {
+        body: { userId: user.id }
+      });
 
       if (error) throw error;
-      if (data) {
-        setProfile({
-          name: data.name || "",
-          bio: data.bio || "",
-          avatar_url: data.profile_pic_url || "",
-        });
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch profile');
       }
+
+      setProfile({
+        name: data.data.name || "",
+        bio: data.data.bio || "",
+        avatar_url: data.data.profile_pic_url || "",
+      });
+      setSkills(data.data.skills || []);
     } catch (error) {
       console.error("Error fetching profile:", error);
+      toast.error("Failed to load profile");
     } finally {
       setLoading(false);
     }
   };
 
   const fetchSkills = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("skills")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-      setSkills(data || []);
-    } catch (error) {
-      console.error("Error fetching skills:", error);
-    }
+    // Skills are now fetched with profile
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -86,15 +76,22 @@ export default function Profile() {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          name: profile.name,
-          bio: profile.bio,
-        })
-        .eq("id", user.id);
+      const { data, error } = await supabase.functions.invoke('user-profile-management', {
+        body: {
+          action: 'update-profile',
+          userId: user.id,
+          profileData: {
+            name: profile.name,
+            bio: profile.bio,
+          }
+        }
+      });
 
       if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to update profile');
+      }
 
       toast.success("Profile updated successfully!");
       setIsEditing(false);
@@ -110,18 +107,25 @@ export default function Profile() {
     if (!user || !newSkill.trim()) return;
 
     try {
-      const { error } = await supabase
-        .from("skills")
-        .insert({
-          user_id: user.id,
-          skill_name: newSkill.trim(),
-        });
+      const { data, error } = await supabase.functions.invoke('user-profile-management', {
+        body: {
+          action: 'add-skill',
+          userId: user.id,
+          profileData: {
+            skill_name: newSkill.trim(),
+          }
+        }
+      });
 
       if (error) throw error;
 
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to add skill');
+      }
+
       toast.success("Skill added!");
       setNewSkill("");
-      fetchSkills();
+      fetchProfile();
     } catch (error: any) {
       console.error("Error adding skill:", error);
       toast.error(error.message || "Failed to add skill");
@@ -130,15 +134,24 @@ export default function Profile() {
 
   const handleRemoveSkill = async (skillId: string) => {
     try {
-      const { error } = await supabase
-        .from("skills")
-        .delete()
-        .eq("id", skillId);
+      const { data, error } = await supabase.functions.invoke('user-profile-management', {
+        body: {
+          action: 'remove-skill',
+          userId: user.id,
+          profileData: {
+            skill_id: skillId,
+          }
+        }
+      });
 
       if (error) throw error;
 
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to remove skill');
+      }
+
       toast.success("Skill removed!");
-      fetchSkills();
+      fetchProfile();
     } catch (error: any) {
       console.error("Error removing skill:", error);
       toast.error(error.message || "Failed to remove skill");

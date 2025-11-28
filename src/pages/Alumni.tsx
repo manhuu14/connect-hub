@@ -5,6 +5,15 @@ import { Search, Briefcase, MapPin, Github, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface AlumniProfile {
   id: string;
@@ -21,19 +30,30 @@ export default function Alumni() {
   const [searchQuery, setSearchQuery] = useState("");
   const [alumni, setAlumni] = useState<AlumniProfile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const { toast } = useToast();
+  const ITEMS_PER_PAGE = 10;
 
-  const searchAlumni = async (query = "") => {
+  const searchAlumni = async (query = "", page = 1) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('search-alumni', {
-        body: { searchQuery: query }
+        body: { 
+          searchQuery: query,
+          page,
+          limit: ITEMS_PER_PAGE
+        }
       });
 
       if (error) throw error;
 
       if (data?.success) {
         setAlumni(data.data || []);
+        setTotalPages(data.pagination?.totalPages || 1);
+        setTotalCount(data.pagination?.total || 0);
+        setCurrentPage(page);
       } else {
         throw new Error(data?.error || 'Failed to fetch alumni');
       }
@@ -54,7 +74,13 @@ export default function Alumni() {
   }, []);
 
   const handleSearch = () => {
-    searchAlumni(searchQuery);
+    setCurrentPage(1);
+    searchAlumni(searchQuery, 1);
+  };
+
+  const handlePageChange = (page: number) => {
+    searchAlumni(searchQuery, page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -112,75 +138,143 @@ export default function Alumni() {
             <p className="text-muted-foreground">No alumni found. Try a different search.</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {alumni.map((profile) => (
-              <div key={profile.id} className="bg-card rounded-xl shadow-card border p-6 transition-smooth hover:shadow-lg">
-                <div className="flex flex-col md:flex-row gap-6">
-                  {profile.profile_pic_url ? (
-                    <img 
-                      src={profile.profile_pic_url} 
-                      alt={profile.name}
-                      className="h-20 w-20 rounded-full object-cover flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="h-20 w-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold flex-shrink-0">
-                      {getInitials(profile.name)}
-                    </div>
-                  )}
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-3">
-                      <div>
-                        <h3 className="text-xl font-semibold mb-1">{profile.name}</h3>
-                        {profile.title && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                            <Briefcase className="h-4 w-4" />
-                            <span>{profile.title}</span>
-                          </div>
-                        )}
-                        {profile.bio && (
-                          <p className="text-sm text-muted-foreground mt-2">{profile.bio}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {profile.github_url && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => window.open(profile.github_url, '_blank')}
-                          >
-                            <Github className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {profile.linkedin_url && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => window.open(profile.linkedin_url, '_blank')}
-                          >
-                            <Linkedin className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button variant="accent" size="sm">
-                          View Profile
-                        </Button>
-                      </div>
-                    </div>
-
-                    {profile.skills && profile.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {profile.skills.map((skill, index) => (
-                          <span key={index} className="text-xs px-3 py-1 bg-muted text-foreground rounded-full font-medium">
-                            {skill}
-                          </span>
-                        ))}
+          <>
+            <div className="mb-4 text-sm text-muted-foreground">
+              Showing {alumni.length} of {totalCount} alumni
+            </div>
+            <div className="space-y-4">
+              {alumni.map((profile) => (
+                <div key={profile.id} className="bg-card rounded-xl shadow-card border p-6 transition-smooth hover:shadow-lg">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {profile.profile_pic_url ? (
+                      <img 
+                        src={profile.profile_pic_url} 
+                        alt={profile.name}
+                        className="h-20 w-20 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="h-20 w-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold flex-shrink-0">
+                        {getInitials(profile.name)}
                       </div>
                     )}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-3">
+                        <div>
+                          <h3 className="text-xl font-semibold mb-1">{profile.name}</h3>
+                          {profile.title && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                              <Briefcase className="h-4 w-4" />
+                              <span>{profile.title}</span>
+                            </div>
+                          )}
+                          {profile.bio && (
+                            <p className="text-sm text-muted-foreground mt-2">{profile.bio}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {profile.github_url && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => window.open(profile.github_url, '_blank')}
+                            >
+                              <Github className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {profile.linkedin_url && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => window.open(profile.linkedin_url, '_blank')}
+                            >
+                              <Linkedin className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button variant="accent" size="sm">
+                            View Profile
+                          </Button>
+                        </div>
+                      </div>
+
+                      {profile.skills && profile.skills.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {profile.skills.map((skill, index) => (
+                            <span key={index} className="text-xs px-3 py-1 bg-muted text-foreground rounded-full font-medium">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    
+                    {[...Array(totalPages)].map((_, index) => {
+                      const page = index + 1;
+                      const showPage = 
+                        page === 1 || 
+                        page === totalPages || 
+                        (page >= currentPage - 1 && page <= currentPage + 1);
+                      
+                      const showEllipsisBefore = page === currentPage - 2 && currentPage > 3;
+                      const showEllipsisAfter = page === currentPage + 2 && currentPage < totalPages - 2;
+
+                      if (showEllipsisBefore) {
+                        return (
+                          <PaginationItem key={`ellipsis-before-${page}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        );
+                      }
+
+                      if (showEllipsisAfter) {
+                        return (
+                          <PaginationItem key={`ellipsis-after-${page}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        );
+                      }
+
+                      if (!showPage) return null;
+
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </main>
     </div>

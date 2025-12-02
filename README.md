@@ -1,4 +1,4 @@
-# Welcome to your Campus Connect Hub
+# Welcome to  Campus Connect Hub
 
 ## Project info
 
